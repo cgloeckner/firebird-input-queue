@@ -1,5 +1,6 @@
 #include "qtkeypadbridge.h"
 
+#include <iostream>
 #include <cassert>
 #include "keymap.h"
 #include "core/keypad.h"
@@ -31,16 +32,16 @@ void keyToKeypad(QKeyEvent *event)
 
             // Touchpad right buttons
         ,{Qt::Key_Home, keymap::on}
-        ,{Qt::Key_PageUp, keymap::doc}
-        ,{Qt::Key_D | ALT, keymap::doc}
-        ,{Qt::Key_PageDown, keymap::menu}
-        ,{Qt::Key_M | ALT, keymap::menu}
+        ,{Qt::Key_PageUp, keymap::doc}  // Qt::Key_Menu | ALT ?
+        ,{Qt::Key_D | ALT, keymap::doc}   // conflict, redundant
+        ,{Qt::Key_PageDown, keymap::menu}  // Qt::Key_Menu ?
+        ,{Qt::Key_M | ALT, keymap::menu}   // conflict, redundant
 
             // Touchpad bottom buttons
         ,{Qt::Key_Control, keymap::ctrl}
-        ,{Qt::Key_Shift | ALT, keymap::shift}
+        ,{Qt::Key_Shift | ALT, keymap::shift}   // ugly workaround
         ,{Qt::Key_Insert, keymap::var}
-        ,{Qt::Key_V | ALT, keymap::var}
+        ,{Qt::Key_V | ALT, keymap::var}   // conflict, redundant
         ,{Qt::Key_Backspace, keymap::del}
         ,{Qt::Key_Delete, keymap::del}
 
@@ -72,16 +73,16 @@ void keyToKeypad(QKeyEvent *event)
         ,{Qt::Key_Y, keymap::ay}
         ,{Qt::Key_Z, keymap::az}
         ,{Qt::Key_Less, keymap::ee}
-        ,{Qt::Key_E | ALT, keymap::ee}
+        ,{Qt::Key_E | ALT, keymap::ee}  // conflict, redundant
         ,{Qt::Key_Bar, keymap::pi}
         ,{Qt::Key_Comma, keymap::comma}
         ,{Qt::Key_Question, keymap::punct}
-        ,{Qt::Key_W | ALT, keymap::punct}
+        ,{Qt::Key_W | ALT, keymap::punct}  // conflict, redundant
         ,{Qt::Key_Greater, keymap::flag}
-        ,{Qt::Key_F | ALT, keymap::flag}
+        ,{Qt::Key_F | ALT, keymap::flag}  // conflict, redundant
         ,{Qt::Key_Space, keymap::space}
-        ,{Qt::Key_Enter | ALT, keymap::ret}
-        ,{Qt::Key_Return | ALT, keymap::ret}
+        ,{Qt::Key_Enter | ALT, keymap::ret}  // conflict but not redundant
+        ,{Qt::Key_Return | ALT, keymap::ret}  // conflict but not redundant
 
             // Numpad buttons
         ,{Qt::Key_0, keymap::n0}
@@ -95,39 +96,39 @@ void keyToKeypad(QKeyEvent *event)
         ,{Qt::Key_8, keymap::n8}
         ,{Qt::Key_9, keymap::n9}
         ,{Qt::Key_Period, keymap::dot}
-        ,{Qt::Key_Minus | ALT, keymap::neg}
+        ,{Qt::Key_Minus | ALT, keymap::neg}    // conflict, but not redundant
         ,{Qt::Key_QuoteLeft, keymap::neg}
 
             // Left buttons
         ,{Qt::Key_Equal, keymap::equ}
-        ,{Qt::Key_Q | ALT, keymap::equ}
+        ,{Qt::Key_Q | ALT, keymap::equ}  // conflict, redundant
         ,{Qt::Key_Backslash, keymap::trig}
-        ,{Qt::Key_T | ALT, keymap::trig}
+        ,{Qt::Key_T | ALT, keymap::trig}  // conflict, redundant
         ,{Qt::Key_AsciiCircum, keymap::pow}
-        ,{Qt::Key_P | ALT, keymap::pow}
+        ,{Qt::Key_P | ALT, keymap::pow}  // conflict, redundant
         ,{Qt::Key_At, keymap::squ}
-        ,{Qt::Key_At | ALT, keymap::squ}
-        ,{Qt::Key_2 | ALT, keymap::squ}
-        ,{Qt::Key_BracketLeft, keymap::exp}
-        ,{Qt::Key_X | ALT, keymap::exp}
-        ,{Qt::Key_BracketRight, keymap::pow10}
-        ,{Qt::Key_1 | ALT, keymap::pow10}
+        ,{Qt::Key_At | ALT, keymap::squ}  // conflict, redundant
+        ,{Qt::Key_2 | ALT, keymap::squ}  // conflict, redundant, on german layout: [shift]+[2] produces [^2]
+        ,{Qt::Key_BracketLeft, keymap::exp}  // unintuitive
+        ,{Qt::Key_X | ALT, keymap::exp}  // conflict, redundant
+        ,{Qt::Key_BracketRight, keymap::pow10}  // unintuitive
+        ,{Qt::Key_1 | ALT, keymap::pow10}  // conflict, redundant
         ,{Qt::Key_ParenLeft, keymap::pleft}
-        ,{Qt::Key_F1, keymap::pleft}
+        ,{Qt::Key_F1, keymap::pleft}  // unintuitive, redundant
         ,{Qt::Key_ParenRight, keymap::pright}
-        ,{Qt::Key_F2, keymap::pright}
+        ,{Qt::Key_F2, keymap::pright}  // unintuitive, redundant
 
             // Right buttons
         ,{Qt::Key_Semicolon, keymap::metrix}
-        ,{Qt::Key_O | ALT, keymap::metrix}
+        ,{Qt::Key_O | ALT, keymap::metrix}  // conflict, redundant
         ,{Qt::Key_Apostrophe, keymap::cat}
-        ,{Qt::Key_C | ALT, keymap::cat}
+        ,{Qt::Key_C | ALT, keymap::cat}  // conflict, redundant
         ,{Qt::Key_Asterisk, keymap::mult}
-        ,{Qt::Key_A | ALT, keymap::mult}
+        ,{Qt::Key_A | ALT, keymap::mult}  // conflict, redundant
         ,{Qt::Key_Slash, keymap::div}
         ,{Qt::Key_F3, keymap::div}
         ,{Qt::Key_Plus, keymap::plus}
-        ,{Qt::Key_Equal | ALT, keymap::plus}
+        ,{Qt::Key_Equal | ALT, keymap::plus}  // conflict, redundant... maybe because of US-layout? but [Alt]+[=] should already yield [+]
         ,{Qt::Key_Minus, keymap::minus}
         ,{Qt::Key_Underscore, keymap::minus}
         ,{Qt::Key_Enter, keymap::enter}
