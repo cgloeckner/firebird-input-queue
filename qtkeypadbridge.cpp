@@ -7,6 +7,110 @@
 #include "qmlbridge.h"
 
 QtKeypadBridge::QtKeypadBridge()
+{
+    bind[Qt::Key_Escape] = {keymap::esc};
+    bind[Qt::Key_End] = {keymap::pad};
+    bind[Qt::Key_Tab] = {keymap::tab};
+
+    bind[Qt::Key_Home] = {keymap::on};
+    bind[Qt::Key_PageUp] = {keymap::doc};
+    bind[Qt::Key_D | Qt::AltModifier] = {keymap::doc};
+    bind[Qt::Key_PageDown] = {keymap::menu};
+    bind[Qt::Key_M | Qt::AltModifier] = {keymap::menu};
+
+    bind[Qt::Key_Control] = {keymap::ctrl};
+    bind[Qt::Key_Shift | Qt::AltModifier] = {keymap::shift};
+    bind[Qt::Key_Insert] = {keymap::var};
+    bind[Qt::Key_V | Qt::AltModifier] = {keymap::var};
+    bind[Qt::Key_Backspace] = {keymap::del};
+    bind[Qt::Key_Delete] = {keymap::del};
+
+    bind[Qt::Key_A] = {keymap::aa};
+    bind[Qt::Key_B] = {keymap::ab};
+    bind[Qt::Key_C] = {keymap::ac};
+    bind[Qt::Key_D] = {keymap::ad};
+    bind[Qt::Key_E] = {keymap::ae};
+    bind[Qt::Key_F] = {keymap::af};
+    bind[Qt::Key_G] = {keymap::ag};
+    bind[Qt::Key_H] = {keymap::ah};
+    bind[Qt::Key_I] = {keymap::ai};
+    bind[Qt::Key_J] = {keymap::aj};
+    bind[Qt::Key_K] = {keymap::ak};
+    bind[Qt::Key_L] = {keymap::al};
+    bind[Qt::Key_M] = {keymap::am};
+    bind[Qt::Key_N] = {keymap::an};
+    bind[Qt::Key_O] = {keymap::ao};
+    bind[Qt::Key_P] = {keymap::ap};
+    bind[Qt::Key_Q] = {keymap::aq};
+    bind[Qt::Key_R] = {keymap::ar};
+    bind[Qt::Key_S] = {keymap::as};
+    bind[Qt::Key_T] = {keymap::at};
+    bind[Qt::Key_U] = {keymap::au};
+    bind[Qt::Key_V] = {keymap::av};
+    bind[Qt::Key_W] = {keymap::aw};
+    bind[Qt::Key_X] = {keymap::ax};
+    bind[Qt::Key_Y] = {keymap::ay};
+    bind[Qt::Key_Z] = {keymap::az};
+    bind[Qt::Key_Less] = {keymap::ee};
+    bind[Qt::Key_E | Qt::AltModifier] = {keymap::ee};
+    bind[Qt::Key_Bar] = {keymap::pi};
+    bind[Qt::Key_Comma] = {keymap::comma};
+    bind[Qt::Key_Question] = {keymap::punct};
+    bind[Qt::Key_W | Qt::AltModifier] = {keymap::punct};
+    bind[Qt::Key_Greater] = {keymap::flag};
+    bind[Qt::Key_F | Qt::AltModifier] = {keymap::flag};
+    bind[Qt::Key_Space] = {keymap::space};
+    bind[Qt::Key_Enter | Qt::AltModifier] = {keymap::ret};
+    bind[Qt::Key_Return | Qt::AltModifier] = {keymap::ret};
+
+    bind[Qt::Key_0] = {keymap::n0};
+    bind[Qt::Key_1] = {keymap::n1};
+    bind[Qt::Key_2] = {keymap::n2};
+    bind[Qt::Key_3] = {keymap::n3};
+    bind[Qt::Key_4] = {keymap::n4};
+    bind[Qt::Key_5] = {keymap::n5};
+    bind[Qt::Key_6] = {keymap::n6};
+    bind[Qt::Key_7] = {keymap::n7};
+    bind[Qt::Key_8] = {keymap::n8};
+    bind[Qt::Key_9] = {keymap::n9};
+    bind[Qt::Key_Period] = {keymap::dot};
+    bind[Qt::Key_Minus | Qt::AltModifier] = {keymap::neg};
+    bind[Qt::Key_QuoteLeft] = {keymap::neg};
+
+    bind[Qt::Key_Equal] = {keymap::equ};
+    bind[Qt::Key_Q | Qt::AltModifier] = {keymap::equ};
+    bind[Qt::Key_Backslash] = {keymap::trig};
+    bind[Qt::Key_T | Qt::AltModifier] = {keymap::trig};
+    bind[Qt::Key_AsciiCircum] = {keymap::pow};
+    bind[Qt::Key_P | Qt::AltModifier] = {keymap::pow};
+    bind[Qt::Key_At] = {keymap::squ};
+    bind[Qt::Key_At | Qt::AltModifier] = {keymap::squ};
+    bind[Qt::Key_2 | Qt::AltModifier] = {keymap::squ};
+    bind[Qt::Key_BracketLeft] = {keymap::exp};
+    bind[Qt::Key_X | Qt::AltModifier] = {keymap::exp};
+    bind[Qt::Key_BracketRight] = {keymap::pow10};
+    bind[Qt::Key_1 | Qt::AltModifier] = {keymap::pow10};
+    bind[Qt::Key_ParenLeft] = {keymap::pleft};
+    bind[Qt::Key_F1] = {keymap::pleft};
+    bind[Qt::Key_ParenRight] = {keymap::pright};
+    bind[Qt::Key_F2] = {keymap::pright};
+    
+    bind[Qt::Key_Semicolon] = {keymap::metrix};
+    bind[Qt::Key_O | Qt::AltModifier] = {keymap::metrix};
+    bind[Qt::Key_Apostrophe] = {keymap::cat};
+    bind[Qt::Key_C | Qt::AltModifier] = {keymap::cat};
+    bind[Qt::Key_Asterisk] = {keymap::mult};
+    bind[Qt::Key_A | Qt::AltModifier] = {keymap::mult};
+    bind[Qt::Key_Slash] = {keymap::div};
+    bind[Qt::Key_F3] = {keymap::div};
+    bind[Qt::Key_Plus] = {keymap::plus};
+    bind[Qt::Key_Equal | Qt::AltModifier] = {keymap::plus};
+    bind[Qt::Key_Minus] = {keymap::minus};
+    bind[Qt::Key_Underscore] = {keymap::minus};
+    bind[Qt::Key_Enter] = {keymap::enter};
+    bind[Qt::Key_Return] = {keymap::enter};
+
+/*
     : keymap{
             // Touchpad left buttons
         {Qt::Key_Escape, keymap::esc}
@@ -118,6 +222,7 @@ QtKeypadBridge::QtKeypadBridge()
         ,{Qt::Key_Return, keymap::enter}
     }
 {
+    */
     // ...
 }
 
@@ -133,6 +238,7 @@ void QtKeypadBridge::setKeypad(unsigned int keymap_id, bool state)
 
 void QtKeypadBridge::keyToKeypad(QKeyEvent *event)
 {
+    /*
     // Determine virtual key that correspond to the key we got
     auto vkey = event->nativeVirtualKey();
 
@@ -143,30 +249,34 @@ void QtKeypadBridge::keyToKeypad(QKeyEvent *event)
     // If neither of them worked then simply use key code
     if (vkey == 0 || vkey == 1)
         vkey = event->key();
+    */
 
-    auto pressed = pressed_keys.find(vkey);
+    auto mkey = event->key();
+    auto iterator = pressed_keys.find(mkey);
 
     // If vkey is already pressed, then this must the the release event
-    if (pressed != pressed_keys.end())
+    if (iterator != pressed_keys.end())
     {
-        setKeypad(*pressed, false);
-        pressed_keys.erase(pressed);
+        for (auto keymap_id: bind[mkey]) {
+            setKeypad(keymap_id, false);
+        }
+        pressed_keys.erase(iterator);
     }
     else if (event->type() == QEvent::KeyPress) // But press only on the press event
     {
-        auto mkey = event->key();
-
         if (event->modifiers() & Qt::AltModifier)
         {
             mkey |= Qt::AltModifier; // Compose alt into the unused bit of the keycode
         }
 
-        auto translated = keymap.find(mkey);
+        auto translated = bind.find(mkey);
 
-        if (translated != keymap.end())
+        if (translated != bind.end())
         {
-            pressed_keys.insert(vkey, *translated);
-            setKeypad(*translated, true);
+            pressed_keys.insert(mkey);
+            for (auto const & keymap_id: bind[mkey]) {
+                setKeypad(keymap_id, true);
+            }
         }
     }
 }

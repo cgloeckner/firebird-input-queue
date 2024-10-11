@@ -2,7 +2,11 @@
 #define QTKEYPADBRIDGE_H
 
 #include <QKeyEvent>
-#include <QHash>
+
+#include <set>
+#include <map>
+
+using Actions = std::vector<unsigned int>; // arrangement of emulated keypad actions
 
 /* This class is used by every Widget which wants to interact with the
  * virtual keypad. Simply call QtKeypadBridge::keyPressEvent or keyReleaseEvent
@@ -22,8 +26,8 @@ private:
     void setKeypad(unsigned int keymap_id, bool state);
     void keyToKeypad(QKeyEvent *event);
 
-    QHash<int, int> const keymap;
-    QHash<int, int> pressed_keys;
+    std::set<int> pressed_keys;
+    std::map<int, Actions> bind;
 };
 
 extern QtKeypadBridge qt_keypad_bridge;
