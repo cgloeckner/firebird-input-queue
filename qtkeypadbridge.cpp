@@ -5,26 +5,11 @@
 #include "keymap.h"
 #include "core/keypad.h"
 #include "qmlbridge.h"
-#include <QHash>
 
-QtKeypadBridge qt_keypad_bridge;
+static const int ALT = 0x02000000;
 
-void setKeypad(unsigned int keymap_id, bool state)
-{
-    int col = keymap_id % KEYPAD_COLS, row = keymap_id / KEYPAD_COLS;
-    assert(row < KEYPAD_ROWS);
-    //assert(col < KEYPAD_COLS); Not needed.
-
-    ::keypad_set_key(row, col, state);
-    the_qml_bridge->notifyButtonStateChanged(row, col, state);
-}
-
-static QHash<int, int> pressed_keys;
-
-void keyToKeypad(QKeyEvent *event)
-{
-    static const int ALT   = 0x02000000;
-    static const QHash<int, int> QtKeyMap {
+QtKeypadBridge::QtKeypadBridge()
+    : keymap{
             // Touchpad left buttons
         {Qt::Key_Escape, keymap::esc}
         ,{Qt::Key_End, keymap::pad}
@@ -133,8 +118,23 @@ void keyToKeypad(QKeyEvent *event)
         ,{Qt::Key_Underscore, keymap::minus}
         ,{Qt::Key_Enter, keymap::enter}
         ,{Qt::Key_Return, keymap::enter}
-    };
+    }
+{
+    // ...
+}
 
+void QtKeypadBridge::setKeypad(unsigned int keymap_id, bool state)
+{
+    int col = keymap_id % KEYPAD_COLS, row = keymap_id / KEYPAD_COLS;
+    assert(row < KEYPAD_ROWS);
+    //assert(col < KEYPAD_COLS); Not needed.
+
+    ::keypad_set_key(row, col, state);
+    the_qml_bridge->notifyButtonStateChanged(row, col, state);
+}
+
+void QtKeypadBridge::keyToKeypad(QKeyEvent *event)
+{
     // Determine virtual key that correspond to the key we got
     auto vkey = event->nativeVirtualKey();
 
@@ -163,9 +163,9 @@ void keyToKeypad(QKeyEvent *event)
             mkey |= ALT; // Compose alt into the unused bit of the keycode
         }
 
-        auto translated = QtKeyMap.find(mkey);
+        auto translated = keymap.find(mkey);
 
-        if (translated != QtKeyMap.end())
+        if (translated != keymap.end())
         {
             pressed_keys.insert(vkey, *translated);
             setKeypad(*translated, true);
@@ -275,3 +275,5 @@ bool QtKeypadBridge::eventFilter(QObject *obj, QEvent *event)
 
     return true;
 }
+
+QtKeypadBridge qt_keypad_bridge;
