@@ -1,6 +1,5 @@
 #include "qtkeypadbridge.h"
 
-#include <iostream>
 #include <cassert>
 
 #include "keymap.h"
@@ -138,7 +137,7 @@ bool QtKeypadBridge::eventFilter(QObject *obj, QEvent *event)
 {
     Q_UNUSED(obj);
 
-    // make sure timer is running
+    // make sure queue timer is running
     setupTimer();
 
     switch (event->type())
@@ -152,7 +151,7 @@ bool QtKeypadBridge::eventFilter(QObject *obj, QEvent *event)
             return true;
         
         case QEvent::FocusOut:
-            focusOutEvent();
+            focusOutEvent(static_cast<QFocusEvent*>(event));
             return false;
         
         default:
@@ -230,16 +229,20 @@ void QtKeypadBridge::focusOutEvent(QFocusEvent *event)
     Q_UNUSED(event);
 
     setTouchpad(0, 0);
-    for (auto calc_key: pressed_keys)
+    for (auto host_key: pressed_keys)
     {
-        setKeypad(calc_key, false);
+        setKeypad(host_key, false);
     }
     pressed_keys.clear();
+    queue.clear();
 }
 
 /* Handles changing touchpad state where +1 is max, -1 is min and 0 is center position.
  */
 void QtKeypadBridge::setTouchpad(int dx, int dy) {
+    assert(abs(dx) <= 1);
+    assert(abs(dy) <= 1);
+
     if (sgn(keypad.touchpad_x) == sgn(dx) && sgn(keypad.touchpad_y) == sgn(dy))
     {
         // nothing to change
@@ -313,12 +316,9 @@ void QtKeypadBridge::processQueue()
         return;
     }
     
-    // release touchpad if necessary
-    if (keypad.touchpad_x != 0 && keypad.touchpad_y != 0)
-    {
-        setTouchpad(0, 0);
-    }
-
+    // release touchpad
+    setTouchpad(0, 0);
+    
     // trigger keypad actionisTouch
     setKeypad(action, true);
 }

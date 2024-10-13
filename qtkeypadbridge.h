@@ -28,7 +28,6 @@ public:
     void focusOutEvent(QFocusEvent *event);
 
 private:
-
     // interfacing with calculator
     void setTouchpad(int dx, int dy);
     void setKeypad(unsigned int keymap_id, bool state);
@@ -60,7 +59,7 @@ enum {
     up
 };
 
-/* Returns true if the given id is realted to touchmap directions rather than keymap stuff.
+/* Returns true if the given id is related to touchmap directions rather than keymap stuff.
  */
 inline bool matches(int id) { return id >= left; }
 
