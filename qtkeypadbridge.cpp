@@ -1,5 +1,6 @@
 #include "qtkeypadbridge.h"
 
+#include <iostream>
 #include <cassert>
 
 #include "keymap.h"
@@ -126,10 +127,6 @@ QtKeypadBridge::QtKeypadBridge()
     bind[Qt::Key_Underscore] = {keymap::minus};
     bind[Qt::Key_Enter] = {keymap::enter};
     bind[Qt::Key_Return] = {keymap::enter};
-
-    // custom
-    bind[Qt::Key_Colon] = {keymap::ctrl, keymap::metrix};
-    bind[Qt::Key_Exclam] = {keymap::punct, touchmap::right, keymap::enter};
 }
 
 /* Entry point for event handling.
@@ -298,6 +295,15 @@ void QtKeypadBridge::setupTimer()
     if (timer->isActive()) {
         // already running
         return;
+    }
+
+    /// WORKAROUND: set up more bindings that probably depend on the calculator model type
+    auto kit = the_qml_bridge->getKitModel()->getKits()[0];
+    auto type = kit.type.toStdString();
+    if (type.find("CX CAS") != type.npos || type.find("CX II") != type.npos)
+    {
+        bind[Qt::Key_Colon] = {keymap::ctrl, keymap::metrix};
+        bind[Qt::Key_Exclam] = {keymap::punct, touchmap::right, keymap::enter};
     }
     
     timer->start(16); // 16ms = ~60fps
