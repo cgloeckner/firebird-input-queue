@@ -9,20 +9,7 @@
 
 #include "keymap.h"
 
-using Actions = std::list<unsigned int>; // arrangement of emulated keypad actions
-
-namespace padmap {
-    // as continuation of the keymap, so the int can be distinguished from keymap actions
-    enum {
-        PAD_LEFT = keymap::ROWS * keymap::COLS + 1,
-        PAD_RIGHT,
-        PAD_UP,
-        PAD_DOWN
-    };
-}
-
-
-inline int sgn(int val) constexpr { return (0 < val) - (val < 0); }
+using ActionList = std::list<unsigned int>; // list of calculator actions (touchpad or keypad)
 
 
 /* This class is used by every Widget which wants to interact with the
@@ -33,26 +20,51 @@ class QtKeypadBridge : public QObject
 {
 public:
     QtKeypadBridge();
-
-    void keyPressEvent(QKeyEvent *event);
-    void keyReleaseEvent(QKeyEvent *event);
-
+    
     virtual bool eventFilter(QObject *obj, QEvent *event);
 
 private:
-    void setupTimer();
-    void processQueue();
+    // event handling
+    void onKeyPress(QKeyEvent *event);
+    void onKeyRelease(QKeyEvent *event);
+    void onFocusOut();
 
+    // interfacing with calculator
     void setTouchpad(int dx, int dy);
     void setKeypad(unsigned int keymap_id, bool state);
-    void keyToKeypad(QKeyEvent *event);
-
+    
+    // queue implementation
+    void setupTimer();
+    void processQueue();
+    
     std::set<int> pressed_keys;
-    std::map<int, Actions> bind;
-    Actions queue;
+    std::map<int, ActionList> bind;
+    ActionList queue;
     
     QTimer *timer;
 };
+
+
+/* Returns the signum (+1 for positive, -1 for negative, 0 for zero) of a number
+ */
+inline int sgn(int val) { return (0 < val) - (val < 0); }
+
+
+namespace touchmap {
+
+// as continuation of the keymap, so the int can be distinguished from keymap actions
+enum {
+    left = keymap::ROWS * keymap::COLS + 1,
+    right,
+    down,
+    up
+};
+
+/* Returns true if the given id is realted to touchmap directions rather than keymap stuff.
+ */
+inline bool matches(int id) { return id >= left; }
+
+}
 
 extern QtKeypadBridge qt_keypad_bridge;
 

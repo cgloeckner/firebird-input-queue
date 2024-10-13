@@ -7,9 +7,17 @@
 #include "core/keypad.h"
 #include "qmlbridge.h"
 
+/* Constructor that provides bindings between keyboard and a (list of) calculator action(s)
+ */
 QtKeypadBridge::QtKeypadBridge()
     : timer{nullptr}
 {
+    // Touchpad controls
+    bind[Qt::Key_Left] = {touchmap::left};
+    bind[Qt::Key_Right] = {touchmap::right};
+    bind[Qt::Key_Down] = {touchmap::down};
+    bind[Qt::Key_Up] = {touchmap::up};
+
     // Touchpad left buttons
     bind[Qt::Key_Escape] = {keymap::esc};
     bind[Qt::Key_End] = {keymap::pad};
@@ -121,9 +129,146 @@ QtKeypadBridge::QtKeypadBridge()
 
     // custom
     bind[Qt::Key_Colon] = {keymap::ctrl, keymap::metrix};
-    bind[Qt::Key_Exclam] = {keymap::punct, PAD_RIGHT, keymap::enter};
+    bind[Qt::Key_Exclam] = {keymap::punct, touchmap::right, keymap::enter};
 }
 
+/* Entry point for event handling.
+ */
+bool QtKeypadBridge::eventFilter(QObject *obj, QEvent *event)
+{
+    Q_UNUSED(obj);
+
+    // make sure timer is running
+    setupTimer();
+
+    switch (event->type())
+    {
+        case QEvent::KeyPress:
+            onKeyPress(static_cast<QKeyEvent*>(event));
+            return true;
+        
+        case QEvent::KeyRelease:
+            onKeyRelease(static_cast<QKeyEvent*>(event));
+            return true;
+        
+        case QEvent::FocusOut:
+            onFocusOut();
+            return false;
+        
+        default:
+            return false;
+    }
+}
+
+/* Handle key press by setting up an action queue
+ */
+void QtKeypadBridge::onKeyPress(QKeyEvent *event)
+{
+    if (event->isAutoRepeat())
+    {
+        // auto-repeat is handled by the calculator itself
+        return;
+    }
+    
+    /// FIXME: ask Vogtinator whether using scancodes is required here
+    auto host_key = event->key();
+    
+    /// FIXME: ask Vogtinator why this might be necessary
+    if (event->modifiers() & Qt::AltModifier)
+    {
+        host_key |= Qt::AltModifier; // Compose alt into the unused bit of the keycode
+    }
+
+    auto iterator = bind.find(host_key);
+    if (iterator == bind.end())
+    {
+        // nothing was bound to this key
+        return;
+    }
+
+    // mark host key as being pressed
+    pressed_keys.insert(host_key);
+
+    // setup queue of related calculator keys
+    queue = iterator->second;
+}
+
+void QtKeypadBridge::onKeyRelease(QKeyEvent *event)
+{
+    if (event->isAutoRepeat())
+    {
+        // auto-repeat is handled by the calculator itself
+        return;
+    }
+
+    /// FIXME: ask Vogtinator whether using scancodes is required here
+    auto host_key = event->key();
+
+    auto iterator = pressed_keys.find(host_key);
+    if (iterator == pressed_keys.end())
+    {
+        // nothing to release
+        return;
+    }
+
+    // trigger release of all calculator keys that are part of that binding
+    setTouchpad(0, 0);
+    for (auto action: bind[host_key])
+    {
+        setKeypad(action, false);
+    }
+ 
+    // reset queue and mark host key as not being pressed
+    queue.clear();
+    pressed_keys.erase(iterator);
+}
+
+/* Stops all touchpad and keypad actions when losing window focus
+ */
+void QtKeypadBridge::onFocusOut()
+{
+    setTouchpad(0, 0);
+    for (auto calc_key: pressed_keys)
+    {
+        setKeypad(calc_key, false);
+    }
+    pressed_keys.clear();
+}
+
+/* Handles changing touchpad state where +1 is max, -1 is min and 0 is center position.
+ */
+void QtKeypadBridge::setTouchpad(int dx, int dy) {
+    if (sgn(keypad.touchpad_x) == sgn(dx) && sgn(keypad.touchpad_y) == sgn(dy))
+    {
+        // nothing to change
+        return;
+    }
+
+    // translate value
+    keypad.touchpad_x = TOUCHPAD_X_MAX / 2 + dx * TOUCHPAD_X_MAX / 2;
+    keypad.touchpad_y = TOUCHPAD_Y_MAX / 2 + dy * TOUCHPAD_Y_MAX / 2;
+
+    // flag touchpad as changed
+    keypad.touchpad_contact = keypad.touchpad_down = dx != 0 || dy != 0;
+    the_qml_bridge->touchpadStateChanged();
+    keypad.kpc.gpio_int_active |= 0x800;
+    keypad_int_check();
+}
+
+/* Handles changing keypad state for a keymap_id and a state (pressed if true)
+ */
+void QtKeypadBridge::setKeypad(unsigned int keymap_id, bool state)
+{
+    int col = keymap_id % KEYPAD_COLS, row = keymap_id / KEYPAD_COLS;
+    assert(row < KEYPAD_ROWS);
+    //assert(col < KEYPAD_COLS); Not needed.
+
+    ::keypad_set_key(row, col, state);
+    the_qml_bridge->notifyButtonStateChanged(row, col, state);
+}
+
+/* Ensures the timer to be set up once. The timer causes the queue to be processed
+ */
 void QtKeypadBridge::setupTimer()
 {
     if (timer == nullptr) {
@@ -140,6 +285,8 @@ void QtKeypadBridge::setupTimer()
     timer->start(16); // 16ms = ~60fps
 }
 
+/* Processes the next element of the queue, if present. A keypad or touchpad press is triggered.
+ */
 void QtKeypadBridge::processQueue()
 {
     if (queue.empty())
@@ -148,213 +295,30 @@ void QtKeypadBridge::processQueue()
         return;
     }
 
-    // dequeue next key
-    auto next = queue.front();
+    // dequeue next action
+    auto action = queue.front();
     queue.pop_front();
 
-    // stop previous touchpad action
-    if (keypad.touchpad_x  != 0 && keypad.touchpad.y != 0)
+    // handle touchpad movement if specified
+    if (touchmap::matches(action))
     {
-        keypad.touchpad_contact = keypad.touchpad_down = false;
+        if (action == touchmap::left)  { setTouchpad(-1,  0); }
+        if (action == touchmap::right) { setTouchpad( 1,  0); }
+        if (action == touchmap::down)  { setTouchpad( 0, -1); }
+        if (action == touchmap::up)    { setTouchpad( 0,  1); }
         
-        the_qml_bridge->touchpadStateChanged();
-        keypad.kpc.gpio_int_active |= 0x800;
-        keypad_int_check();
-    }
-
-    switch (next)
-    {
-        // mimic touchpad movement
-        case PAD_RIGHT:
-        {
-            keypad.touchpad_x = TOUCHPAD_X_MAX;
-            keypad.touchpad_y = TOUCHPAD_Y_MAX / 2;
-            keypad.touchpad_contact = keypad.touchpad_down = true;
-        }
-        default:
-            // press key
-            setKeypad(next, true);
-    };
-}
-
-void setTouchpad(int dx, int dy) {
-    if (sgn(keypad.touchpad_x) == sgn(dx) && sng(keypad.touchpad_y) == sgn(dy))
-    {
-        // nothing to change
-        return
-    }
-
-    // translate value of -1 to minimum (0), value of 0 to center (half) and value of 1 to maximum (pad max)
-    keypad.touchpad_x = TOUCHPAD_X_MAX / 2 + dx * TOUCHPAD_X_MAX / 2;
-    keypad.touchpad_y = TOUCHPAD_Y_MAX / 2 + dy * TOUCHPAD_Y_MAX / 2;
-}
-
-void QtKeypadBridge::setKeypad(unsigned int keymap_id, bool state)
-{
-    int col = keymap_id % KEYPAD_COLS, row = keymap_id / KEYPAD_COLS;
-    assert(row < KEYPAD_ROWS);
-    //assert(col < KEYPAD_COLS); Not needed.
-
-    ::keypad_set_key(row, col, state);
-    the_qml_bridge->notifyButtonStateChanged(row, col, state);
-}
-
-void QtKeypadBridge::keyToKeypad(QKeyEvent *event)
-{
-    /// FIXME: why was vkey used earlier?
-    /*
-    // Determine virtual key that correspond to the key we got
-    auto vkey = event->nativeVirtualKey();
-
-    // nativeVirtualKey should be working everywhere, but just in case it's not
-    if (vkey == 0 || vkey == 1)
-        vkey = event->nativeScanCode();
-
-    // If neither of them worked then simply use key code
-    if (vkey == 0 || vkey == 1)
-        vkey = event->key();
-    */
-
-    auto mkey = event->key();
-    auto iterator = pressed_keys.find(mkey);
-
-    // If vkey is already pressed, then this must the the release event
-    if (iterator != pressed_keys.end())
-    {
-        for (auto keymap_id: bind[mkey]) {
-            switch (keymap_id)
-            {
-                // stop touchpad movement
-                case PAD_RIGHT:
-                    setTouchpad(1, 0);
-                    
-                default:
-                    setKeypad(keymap_id, false);
-            };
-        }
-        queue.clear();
-        pressed_keys.erase(iterator);
-    }
-    else if (event->type() == QEvent::KeyPress) // But press only on the press event
-    {
-        if (event->modifiers() & Qt::AltModifier)
-        {
-            mkey |= Qt::AltModifier; // Compose alt into the unused bit of the keycode
-        }
-
-        auto translated = bind.find(mkey);
-
-        if (translated != bind.end())
-        {
-            pressed_keys.insert(mkey);
-            queue = bind[mkey];
-        }
-    }
-}
-
-void QtKeypadBridge::keyPressEvent(QKeyEvent *event)
-{
-    // Ignore autorepeat, calc os must handle it on its own
-    if(event->isAutoRepeat())
-        return;
-
-    Qt::Key key = static_cast<Qt::Key>(event->key());
-
-    switch(key)
-    {
-    case Qt::Key_Down:
-        keypad.touchpad_x = TOUCHPAD_X_MAX / 2;
-        keypad.touchpad_y = 0;
-        break;
-    case Qt::Key_Up:
-        keypad.touchpad_x = TOUCHPAD_X_MAX / 2;
-        keypad.touchpad_y = TOUCHPAD_Y_MAX;
-        break;
-    case Qt::Key_Left:
-        keypad.touchpad_y = TOUCHPAD_Y_MAX / 2;
-        keypad.touchpad_x = 0;
-        break;
-    case Qt::Key_Right:
-        keypad.touchpad_y = TOUCHPAD_Y_MAX / 2;
-        keypad.touchpad_x = TOUCHPAD_X_MAX;
-        break;
-    default:
-        keyToKeypad(event);
-
+        // done for now
         return;
     }
-
-    keypad.touchpad_contact = keypad.touchpad_down = true;
-    the_qml_bridge->touchpadStateChanged();
-    keypad.kpc.gpio_int_active |= 0x800;
-
-    keypad_int_check();
-}
-
-void QtKeypadBridge::keyReleaseEvent(QKeyEvent *event)
-{
-    // Ignore autorepeat, calc os must handle it on its own
-    if(event->isAutoRepeat())
-        return;
-
-    Qt::Key key = static_cast<Qt::Key>(event->key());
-
-    switch(key)
+    
+    // release touchpad if necessary
+    if (keypad.touchpad_x != 0 && keypad.touchpad_y != 0)
     {
-    case Qt::Key_Down:
-        if(keypad.touchpad_x == TOUCHPAD_X_MAX / 2
-            && keypad.touchpad_y == 0)
-            keypad.touchpad_contact = keypad.touchpad_down = false;
-        break;
-    case Qt::Key_Up:
-        if(keypad.touchpad_x == TOUCHPAD_X_MAX / 2
-            && keypad.touchpad_y == TOUCHPAD_Y_MAX)
-            keypad.touchpad_contact = keypad.touchpad_down = false;
-        break;
-    case Qt::Key_Left:
-        if(keypad.touchpad_y == TOUCHPAD_Y_MAX / 2
-            && keypad.touchpad_x == 0)
-            keypad.touchpad_contact = keypad.touchpad_down = false;
-        break;
-    case Qt::Key_Right:
-        if(keypad.touchpad_y == TOUCHPAD_Y_MAX / 2
-            && keypad.touchpad_x == TOUCHPAD_X_MAX)
-            keypad.touchpad_contact = keypad.touchpad_down = false;
-        break;
-    default:
-        keyToKeypad(event);
-
-        return;
+        setTouchpad(0, 0);
     }
 
-    the_qml_bridge->touchpadStateChanged();
-    keypad.kpc.gpio_int_active |= 0x800;
-    keypad_int_check();
-}
-
-bool QtKeypadBridge::eventFilter(QObject *obj, QEvent *event)
-{
-    Q_UNUSED(obj);
-
-    setupTimer(); // guarantees timer to be running
-
-    if(event->type() == QEvent::KeyPress)
-        keyPressEvent(static_cast<QKeyEvent*>(event));
-    else if(event->type() == QEvent::KeyRelease)
-        keyReleaseEvent(static_cast<QKeyEvent*>(event));
-    else if(event->type() == QEvent::FocusOut)
-    {
-        // Release all keys on focus change
-        for(auto calc_key : pressed_keys)
-            setKeypad(calc_key, false);
-
-        pressed_keys.clear();
-        return false;
-    }
-    else
-        return false;
-
-    return true;
+    // trigger keypad actionisTouch
+    setKeypad(action, true);
 }
 
 QtKeypadBridge qt_keypad_bridge;
