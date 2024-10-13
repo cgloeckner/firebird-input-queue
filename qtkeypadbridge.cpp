@@ -1,6 +1,5 @@
 #include "qtkeypadbridge.h"
 
-#include <iostream>
 #include <cassert>
 
 #include "keymap.h"
