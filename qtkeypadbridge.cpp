@@ -38,6 +38,7 @@ QtKeypadBridge::QtKeypadBridge()
     bind[Qt::Key_Delete] = {keymap::del};
 
     // Alpha buttons
+    /// NOTE: Qt::Key_A maps to 0x41 (uppercase A), but keymap::aa maps to lowercase a
     bind[Qt::Key_A] = {keymap::aa};
     bind[Qt::Key_B] = {keymap::ab};
     bind[Qt::Key_C] = {keymap::ac};
@@ -188,8 +189,19 @@ void QtKeypadBridge::keyPressEvent(QKeyEvent *event)
     // mark host key as being pressed
     pressed_keys.insert(host_key);
 
-    // setup queue of related calculator keys
-    queue = iterator->second;
+    if (isAlphaHostKey(host_key) && event->modifiers() & Qt::ShiftModifier)
+    {
+        assert(iterator->second.size() == 1);
+        auto calc_key = iterator->second.front();
+        
+        // force uppercase of the assigned single letter
+        queue = {keymap::shift, calc_key};
+    }
+    else
+    {
+        // use queue that was assigned in the bindung
+        queue = iterator->second;
+    }
 }
 
 void QtKeypadBridge::keyReleaseEvent(QKeyEvent *event)
@@ -216,6 +228,7 @@ void QtKeypadBridge::keyReleaseEvent(QKeyEvent *event)
     {
         setKeypad(action, false);
     }
+    setKeypad(keymap::shift, false); // may have been used to write uppercase via host's shift
  
     // reset queue and mark host key as not being pressed
     queue.clear();

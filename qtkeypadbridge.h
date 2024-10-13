@@ -49,6 +49,11 @@ private:
 inline int sgn(int val) { return (0 < val) - (val < 0); }
 
 
+/* Returns true if the given host key is within alphabetic key range
+ */
+inline bool isAlphaHostKey(int key) { return Qt::Key_A <= key && key <= Qt::Key_Z; }
+
+
 namespace touchmap {
 
 // as continuation of the keymap, so the int can be distinguished from keymap actions
