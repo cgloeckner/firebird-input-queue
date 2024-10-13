@@ -144,15 +144,15 @@ bool QtKeypadBridge::eventFilter(QObject *obj, QEvent *event)
     switch (event->type())
     {
         case QEvent::KeyPress:
-            onKeyPress(static_cast<QKeyEvent*>(event));
+            keyPressEvent(static_cast<QKeyEvent*>(event));
             return true;
         
         case QEvent::KeyRelease:
-            onKeyRelease(static_cast<QKeyEvent*>(event));
+            keyReleaseEvent(static_cast<QKeyEvent*>(event));
             return true;
         
         case QEvent::FocusOut:
-            onFocusOut();
+            focusOutEvent();
             return false;
         
         default:
@@ -162,7 +162,7 @@ bool QtKeypadBridge::eventFilter(QObject *obj, QEvent *event)
 
 /* Handle key press by setting up an action queue
  */
-void QtKeypadBridge::onKeyPress(QKeyEvent *event)
+void QtKeypadBridge::keyPressEvent(QKeyEvent *event)
 {
     if (event->isAutoRepeat())
     {
@@ -193,7 +193,7 @@ void QtKeypadBridge::onKeyPress(QKeyEvent *event)
     queue = iterator->second;
 }
 
-void QtKeypadBridge::onKeyRelease(QKeyEvent *event)
+void QtKeypadBridge::keyReleaseEvent(QKeyEvent *event)
 {
     if (event->isAutoRepeat())
     {
@@ -225,8 +225,10 @@ void QtKeypadBridge::onKeyRelease(QKeyEvent *event)
 
 /* Stops all touchpad and keypad actions when losing window focus
  */
-void QtKeypadBridge::onFocusOut()
+void QtKeypadBridge::focusOutEvent(QFocusEvent *event)
 {
+    Q_UNUSED(event);
+
     setTouchpad(0, 0);
     for (auto calc_key: pressed_keys)
     {

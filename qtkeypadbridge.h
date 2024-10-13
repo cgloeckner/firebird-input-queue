@@ -23,11 +23,11 @@ public:
     
     virtual bool eventFilter(QObject *obj, QEvent *event);
 
+    void keyPressEvent(QKeyEvent *event);
+    void keyReleaseEvent(QKeyEvent *event);
+    void focusOutEvent(QFocusEvent *event);
+
 private:
-    // event handling
-    void onKeyPress(QKeyEvent *event);
-    void onKeyRelease(QKeyEvent *event);
-    void onFocusOut();
 
     // interfacing with calculator
     void setTouchpad(int dx, int dy);
